@@ -32,17 +32,24 @@ public class LogParser {
 
     public int parseLogFile() {
         List<Log> logs = new ArrayList<>();
+        int seq = 0;
+        LOGGER.info("[parseLogFile] 로그 파싱 시작");
         try (BufferedReader bufferedReader = new BufferedReader(new FileReader(filePath))) {
             String line;
             while ((line = bufferedReader.readLine()) != null) {
                 Log log = parseLine(line);
                 if (log != null) {
                     logs.add(log);
+                    seq++;
+                    if (seq % 100 == 0) {
+                        LOGGER.info("[parseLogFile] {}번째 로그 처리", seq);
+                    }
                 }
             }
         } catch (IOException e) {
             return -1;
         }
+        LOGGER.info("[parseLogFile] 로그 처리 완료. 처리량 {} 줄", logs.size());
         return saveLogs(logs).size();
     }
 
