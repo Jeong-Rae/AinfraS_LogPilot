@@ -19,7 +19,13 @@ public class ParsingController {
     @PostMapping("/parsing")
     @ResponseBody
     public ResponseEntity<BasicResponse> runParsing(@RequestBody ParsingRequest request) {
-        int successCount = logParser.parseLogFile();
+        int successCount;
+        if (request.filePath() != null) {
+            successCount = logParser.parseLogFile(request.filePath());
+        } else {
+            successCount = logParser.parseLogFile();
+        }
+
         BasicResponse response = new BasicResponse(String.valueOf(successCount), "", "");
         return ResponseEntity
                 .status(HttpStatus.OK)
