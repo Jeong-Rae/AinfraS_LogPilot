@@ -23,8 +23,9 @@ import java.util.regex.Pattern;
 public class LogParser {
     @Value("${log.file.path}")
     private String filePath;
-    private static final String LOG_PATTERN = "(\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d+)(\\+\\d{2}:\\d{2})\\s+(\\w+)\\s+\\d+\\s+---\\s+\\[(.*?)\\]\\s+(.*?)\\s+:\\s+\\[(.*?)\\]\\s+(.*)";
-    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+    private static final String LOG_PATTERN = "(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d+)\\s+\\[(.*?)\\]\\s+(.*?)\\s+(.*?)\\s+-\\s+\\[(.*?)\\]\\s+(.*)";
+    //private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
     private final Pattern pattern = Pattern.compile(LOG_PATTERN);
 
     private final LogRepository logRepository;
@@ -37,8 +38,10 @@ public class LogParser {
         try (BufferedReader bufferedReader = new BufferedReader(new FileReader(filePath))) {
             String line;
             while ((line = bufferedReader.readLine()) != null) {
+                //LOGGER.info("line: {}", line);
                 Log log = parseLine(line);
                 if (log != null) {
+                    //LOGGER.info("Log: {}", log);
                     logs.add(log);
                     seq++;
                     if (seq % 100 == 0) {
@@ -62,6 +65,7 @@ public class LogParser {
             while ((line = bufferedReader.readLine()) != null) {
                 Log log = parseLine(line);
                 if (log != null) {
+                    //LOGGER.info("Log: {}", log);
                     logs.add(log);
                     seq++;
                     if (seq % 100 == 0) {
@@ -81,11 +85,11 @@ public class LogParser {
         if (matcher.find()) {
             return Log.builder()
                     .timestamp(LocalDateTime.parse(matcher.group(1), FORMATTER))
-                    .level(matcher.group(3))
-                    .thread(matcher.group(4))
-                    .logger(matcher.group(5).trim())
-                    .methodName(matcher.group(6))
-                    .body(matcher.group(7))
+                    .level(matcher.group(2))
+                    .thread(matcher.group(3))
+                    .logger(matcher.group(4).trim())
+                    .methodName(matcher.group(5))
+                    .body(matcher.group(6))
                     .build();
         }
         return null;
