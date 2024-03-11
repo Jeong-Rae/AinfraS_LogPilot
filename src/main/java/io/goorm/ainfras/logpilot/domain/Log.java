@@ -23,15 +23,19 @@ public class Log {
     private String logger;
     private String methodName;
     private String body;
+    private String requestId;
+    private String parameters;
 
     @Builder
-    public Log(LocalDateTime timestamp, String level, String thread, String logger, String methodName, String body) {
+    public Log(LocalDateTime timestamp, String level, String thread, String logger, String methodName, String body, String requestId, String parameters) {
         this.timestamp = timestamp;
         this.level = level;
         this.thread = thread;
         this.logger = logger;
         this.methodName = methodName;
         this.body = body;
+        this.requestId = requestId;
+        this.parameters = parameters;
     }
 
     public Log() {

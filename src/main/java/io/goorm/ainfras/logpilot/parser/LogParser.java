@@ -23,10 +23,12 @@ import java.util.regex.Pattern;
 public class LogParser {
     @Value("${log.file.path}")
     private String filePath;
-    private static final String LOG_PATTERN = "(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d+)\\s+\\[(.*?)\\]\\s+(.*?)\\s+(.*?)\\s+-\\s+\\[(.*?)\\]\\s+(.*)";
+    private static final Pattern LOG_PATTERN = Pattern.compile("(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2},\\d{3})\\s+\\[(.*?)\\]\\s+(\\S+)\\s+(.*?)\\s+-\\s+\\[(.*?)\\](.*)");
+    private static final Pattern REQUEST_ID_PATTERN = Pattern.compile("RequestId:\\s+(.*?)(,|\\s|$)");
+    private static final Pattern PARAMETERS_PATTERN = Pattern.compile("Parameters:\\s+(.*)");
+
     //private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
-    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
-    private final Pattern pattern = Pattern.compile(LOG_PATTERN);
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss,SSS");
 
     private final LogRepository logRepository;
     private final Logger LOGGER = LoggerFactory.getLogger(LogParser.class);
@@ -42,6 +44,7 @@ public class LogParser {
                 Log log = parseLine(line);
                 if (log != null) {
                     //LOGGER.info("Log: {}", log);
+                    System.out.println(log.getRequestId());
                     logs.add(log);
                     seq++;
                     if (seq % 100 == 0) {
@@ -65,7 +68,7 @@ public class LogParser {
             while ((line = bufferedReader.readLine()) != null) {
                 Log log = parseLine(line);
                 if (log != null) {
-                    //LOGGER.info("Log: {}", log);
+                    LOGGER.info("Log: {}", log);
                     logs.add(log);
                     seq++;
                     if (seq % 100 == 0) {
@@ -81,15 +84,33 @@ public class LogParser {
     }
 
     private Log parseLine(String line) {
-        Matcher matcher = pattern.matcher(line);
+        Matcher matcher = LOG_PATTERN.matcher(line);
         if (matcher.find()) {
+            String body = matcher.group(6).trim();
+
+
+            String requestID = "";
+            String parameters = "";
+            Matcher requestIdMatcher = REQUEST_ID_PATTERN.matcher(body);
+            if (requestIdMatcher.find()) {
+                requestID = requestIdMatcher.group(1);
+                //System.out.println(requestID);
+            }
+
+            Matcher parametersMatcher = PARAMETERS_PATTERN.matcher(body);
+            if (parametersMatcher.find()) {
+                parameters =  parametersMatcher.group(1);
+            }
+
             return Log.builder()
                     .timestamp(LocalDateTime.parse(matcher.group(1), FORMATTER))
                     .level(matcher.group(2))
                     .thread(matcher.group(3))
                     .logger(matcher.group(4).trim())
                     .methodName(matcher.group(5))
-                    .body(matcher.group(6))
+                    .body(body)
+                    .requestId(requestID)
+                    .parameters(parameters)
                     .build();
         }
         return null;
